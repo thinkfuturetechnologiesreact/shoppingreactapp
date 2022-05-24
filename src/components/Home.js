@@ -1,31 +1,54 @@
-import React from "react";
-import { Button } from "react-bootstrap";
-import { useNavigate } from "react-router";
-import { useUserAuth } from "../context/UserAuthContext";
+import { CartState } from "../context/Context";
+import Filters from "./Filters";
+import SingleProduct from "./SingleProduct";
 
 const Home = () => {
-  const { logOut, user } = useUserAuth();
-  const navigate = useNavigate();
-  const handleLogout = async () => {
-    try {
-      await logOut();
-      navigate("/");
-    } catch (error) {
-      console.log(error.message);
+  const {
+    state: { products },
+    productState: { sort, byStock, byFastDelivery, byRating, searchQuery },
+  } = CartState();
+
+  const transformProducts = () => {
+    let sortedProducts = products;
+
+    if (sort) {
+      sortedProducts = sortedProducts.sort((a, b) =>
+        sort === "lowToHigh" ? a.price - b.price : b.price - a.price
+      );
     }
+
+    if (!byStock) {
+      sortedProducts = sortedProducts.filter((prod) => prod.inStock);
+    }
+
+    if (byFastDelivery) {
+      sortedProducts = sortedProducts.filter((prod) => prod.fastDelivery);
+    }
+
+    if (byRating) {
+      sortedProducts = sortedProducts.filter(
+        (prod) => prod.ratings >= byRating
+      );
+    }
+
+    if (searchQuery) {
+      sortedProducts = sortedProducts.filter((prod) =>
+        prod.name.toLowerCase().includes(searchQuery)
+      );
+    }
+
+    return sortedProducts;
   };
+
   return (
-    <>
-      <div className="p-4 box mt-3 text-center">
-        Hello Welcome <br />
-        {user && user.email}
+    <div className="home">
+      <Filters />
+      <div className="productContainer">
+        {transformProducts().map((prod) => (
+          <SingleProduct prod={prod} key={prod.id} />
+        ))}
       </div>
-      <div className="d-grid gap-2">
-        <Button variant="primary" onClick={handleLogout}>
-          Log out
-        </Button>
-      </div>
-    </>
+    </div>
   );
 };
 
